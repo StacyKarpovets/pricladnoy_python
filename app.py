@@ -650,7 +650,7 @@ def main():
             fig_heatmap.update_layout(height=400)
             st.plotly_chart(fig_heatmap, use_container_width=True)
     
-    with tab3:
+     with tab3:
         st.header("🌤️ Текущая погода")
 
         col_btn1, col_btn2 = st.columns([3, 1])
@@ -769,7 +769,7 @@ def main():
             )
             
             st.plotly_chart(fig_comparison, use_container_width=True)
-    
+            
     with tab4:
         st.header("Сравнение асинхронных и синхронных запросов")
         
