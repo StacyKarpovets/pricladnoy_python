@@ -654,7 +654,6 @@ def main():
         st.header("🌤️ Текущая погода")
 
         col_btn1, col_btn2 = st.columns([3, 1])
-        
         with col_btn1:
             if st.button("Получить текущую погоду", type="primary", use_container_width=True):
                 with st.spinner(f"Запрос данных для {selected_city}..."):
