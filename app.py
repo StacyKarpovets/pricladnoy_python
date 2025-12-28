@@ -217,7 +217,10 @@ async def fetch_weather(session: aiohttp.ClientSession, api_key: str, city: str)
                     'humidity': data['main']['humidity'],
                     'pressure': data['main']['pressure'],
                     'description': data['weather'][0]['description'],
-                    'wind_speed': data['wind']['speed']
+                    'wind_speed': data['wind']['speed'],
+                    'sunrise': datetime.fromtimestamp(data['sys']['sunrise']).strftime('%H:%M'),
+                    'sunset': datetime.fromtimestamp(data['sys']['sunset']).strftime('%H:%M'),
+                    'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 }
             elif response.status == 401:
                 error_data = await response.json()
@@ -535,39 +538,33 @@ def main():
         with col_right:
             st.subheader("Статистика по сезонам")
             
-            st.write(f"Индекс seasonal_stats: {list(seasonal_stats.index)}")
-            st.write(f"Форма seasonal_stats: {seasonal_stats.shape}")
+            seasons_data = [
+                {"Сезон": "Зима", "Средняя": "-", "Стд. откл.": "-", "Минимум": "-", "Максимум": "-", "Дней": 0},
+                {"Сезон": "Весна", "Средняя": "-", "Стд. откл.": "-", "Минимум": "-", "Максимум": "-", "Дней": 0},
+                {"Сезон": "Лето", "Средняя": "-", "Стд. откл.": "-", "Минимум": "-", "Максимум": "-", "Дней": 0},
+                {"Сезон": "Осень", "Средняя": "-", "Стд. откл.": "-", "Минимум": "-", "Максимум": "-", "Дней": 0},
+            ]
             
-            display_data = []
-            seasons = ['winter', 'spring', 'summer', 'autumn']
-            
-            available_seasons = list(seasonal_stats.index) if not seasonal_stats.empty else []
-            st.write(f"Доступные сезоны: {available_seasons}")
-            
-            for season in seasons:
-                if season in available_seasons:
+            for season in ['winter', 'spring', 'summer', 'autumn']:
+                if season in seasonal_stats.index:
                     season_data = seasonal_stats.loc[season]
-                    display_data.append({
+                    idx = ['winter', 'spring', 'summer', 'autumn'].index(season)
+                    seasons_data[idx] = {
                         'Сезон': season.capitalize(),
                         'Средняя': f"{season_data['mean']:.1f}°C",
                         'Стд. откл.': f"{season_data['std']:.1f}°C",
                         'Минимум': f"{season_data['min']:.1f}°C",
                         'Максимум': f"{season_data['max']:.1f}°C",
                         'Дней': int(season_data['count'])
-                    })
-                else:
-                    st.write(f"Сезон '{season}' отсутствует в данных")
+                    }
             
-            if display_data:
-                display_df = pd.DataFrame(display_data)
-                st.dataframe(
-                    display_df,
-                    use_container_width=True,
-                    height=350
-                )
-                display_df = display_df.head(4)
-            else:
-                st.info("Нет данных для отображения статистики по сезонам")
+            display_df = pd.DataFrame(seasons_data)
+            
+            st.dataframe(
+                display_df,
+                width='stretch',
+                height=300
+            )
             
             st.markdown("**Климатическая норма:**")
             climate_norms = seasonal_temperatures[selected_city]
@@ -599,7 +596,7 @@ def main():
                     y=pivot_data[season],
                     mode='lines+markers',
                     name=season.capitalize(),
-                    hovertemplate=f'{season.capitalize()}: %{{y:.1f}}°C<extra></extra>'
+                    hovertemplate=f'{season.capitalize()}: %{y:.1f}°C<extra></extra>'
                 ))
         
         fig_seasonal.update_layout(
@@ -655,16 +652,36 @@ def main():
                 aggfunc='mean'
             )
             
-            fig_heatmap = px.imshow(
-                heatmap_data,
-                labels=dict(x="Месяц", y="Год", color="Температура (°C)"),
-                x=['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 
-                   'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'],
-                title=f'Температурная карта по месяцам и годам'
-            )
+            all_months = list(range(1, 13))
+            for month in all_months:
+                if month not in heatmap_data.columns:
+                    heatmap_data[month] = np.nan
             
-            fig_heatmap.update_layout(height=400)
-            st.plotly_chart(fig_heatmap, use_container_width=True)
+            heatmap_data = heatmap_data.reindex(sorted(heatmap_data.columns), axis=1)
+            
+            heatmap_data_filled = heatmap_data.fillna(heatmap_data.mean())
+            
+            month_names = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 
+                          'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек']
+            
+            available_months = list(heatmap_data_filled.columns)
+            month_labels = [month_names[m-1] for m in available_months]
+            
+            try:
+                fig_heatmap = px.imshow(
+                    heatmap_data_filled,
+                    labels=dict(x="Месяц", y="Год", color="Температура (°C)"),
+                    x=month_labels,
+                    title=f'Температурная карта по месяцам и годам',
+                    color_continuous_scale='RdBu_r',
+                    aspect='auto'
+                )
+                
+                fig_heatmap.update_layout(height=400)
+                st.plotly_chart(fig_heatmap, use_container_width=True)
+                
+            except Exception as e:
+                st.error(f"Ошибка при создании тепловой карты: {e}")
     
     with tab3:
         st.header("🌤️ Текущая погода")
@@ -679,7 +696,11 @@ def main():
                     if method == "Синхронный":
                         weather_data = get_current_weather_sync(api_key_input, selected_city)
                     else:
-                        weather_data = get_current_weather_sync(api_key_input, selected_city)
+                        async def get_async_weather():
+                            results = await get_multiple_weather_async(api_key_input, [selected_city])
+                            return results[0] if results else {'success': False, 'error': 'No results'}
+                        
+                        weather_data = asyncio.run(get_async_weather())
                     
                     request_time = time.time() - start_time
                     
