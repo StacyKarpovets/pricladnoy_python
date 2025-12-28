@@ -389,83 +389,84 @@ def main():
     
     st.title("🌡️ Анализ температурных данных")
     
-    with st.sidebar:
-        selected_city = st.selectbox(
-            "Выберите город для анализа:",
-            ALL_CITIES,
-            index=6,
-            help="Выберите город для детального анализа температурных данных"
-        )
+with st.sidebar:
+    selected_city = st.selectbox(
+        "Выберите город для анализа:",
+        ALL_CITIES,
+        index=6,
+    )
     
-        st.subheader("🔑 OpenWeatherMap API")
-        
-        if 'api_key_valid' not in st.session_state:
-            st.session_state.api_key_valid = False
-        if 'api_key_error' not in st.session_state:
-            st.session_state.api_key_error = None
-        
-        api_key_input = st.text_input(
-            "Введите ваш API ключ:",
-            value="",
-            type="password",
-            placeholder="Введите ключ OpenWeatherMap..."
-        )
-        
-        col_check1, col_check2 = st.columns([2, 1])
-        with col_check1:
-            check_key = st.button("Проверить ключ", use_container_width=True)
-        
-        with col_check2:
-            clear_key = st.button("Очистить", use_container_width=True, type="secondary")
-        
-        if clear_key:
-            st.session_state.api_key_valid = False
-            st.session_state.api_key_error = None
-            st.rerun()
-        
-        if check_key:
-            if api_key_input:
-                with st.spinner("Проверка API ключа..."):
-                    test_result = get_current_weather_sync(api_key_input, "London")
+    st.markdown("---")
+    
+    st.subheader("🔑 OpenWeatherMap API")
+    
+    if 'api_key_valid' not in st.session_state:
+        st.session_state.api_key_valid = False
+    if 'api_key_error' not in st.session_state:
+        st.session_state.api_key_error = None
+    
+    api_key_input = st.text_input(
+        "Введите ваш API ключ:",
+        value="",
+        type="password",
+        placeholder="Введите ключ OpenWeatherMap..."
+    )
+    
+    col_check1, col_check2 = st.columns([2, 1])
+    with col_check1:
+        check_key = st.button("Проверить ключ", use_container_width=True)
+    
+    with col_check2:
+        clear_key = st.button("Очистить", use_container_width=True, type="secondary")
+    
+    if clear_key:
+        st.session_state.api_key_valid = False
+        st.session_state.api_key_error = None
+        st.rerun()
+    
+    if check_key:
+        if api_key_input:
+            with st.spinner("Проверка API ключа..."):
+                test_result = get_current_weather_sync(api_key_input, "London")
+                
+                if test_result['success']:
+                    st.session_state.api_key_valid = True
+                    st.session_state.api_key_error = None
+                    st.success("API ключ действителен!")
+                else:
+                    st.session_state.api_key_valid = False
+                    st.session_state.api_key_error = test_result
                     
-                    if test_result['success']:
-                        st.session_state.api_key_valid = True
-                        st.session_state.api_key_error = None
-                        st.success("API ключ действителен!")
+                    if test_result.get('api_error', {}).get('cod') == 401:
+                        st.error(f"{test_result['error']}")
                     else:
-                        st.session_state.api_key_valid = False
-                        st.session_state.api_key_error = test_result
-                        
-                        if test_result.get('api_error', {}).get('cod') == 401:
-                            st.error(f"{test_result['error']}")
-                        else:
-                            st.warning(f"{test_result.get('error', 'Неизвестная ошибка')}")
-            else:
-                st.warning("Введите API ключ для проверки")
-        
-        if st.session_state.api_key_valid:
-            st.success("API ключ настроен")
-        elif st.session_state.api_key_error:
-            error = st.session_state.api_key_error
-            if error.get('api_error', {}).get('cod') == 401:
-                st.error("Неверный API ключ")
-            else:
-                st.warning("Проблема с API ключом")
-        
-        st.markdown("---")
-        st.subheader("Параметры анализа")
-        
-        method = st.radio(
-            "Выберите метод получения погоды:",
-            ["Синхронный", "Асинхронный"],
-            index=0
-        )
-        
-        years_to_show = st.multiselect(
-            "Годы для анализа:",
-            options=[2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024],
-            default=[2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024],
-            help="Выберите годы для включения в анализ")
+                        st.warning(f"{test_result.get('error', 'Неизвестная ошибка')}")
+        else:
+            st.warning("Введите API ключ для проверки")
+    
+    if st.session_state.api_key_valid:
+        st.success("API ключ настроен")
+    elif st.session_state.api_key_error:
+        error = st.session_state.api_key_error
+        if error.get('api_error', {}).get('cod') == 401:
+            st.error("Неверный API ключ")
+        else:
+            st.warning("Проблема с API ключом")
+    
+    st.markdown("---")
+    st.subheader("Параметры анализа")
+    
+    method = st.radio(
+        "Выберите метод получения погоды:",
+        ["Синхронный", "Асинхронный"],
+        index=0
+    )
+    
+    years_to_show = st.multiselect(
+        "Годы для анализа:",
+        options=[2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024],
+        default=[2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024],
+        help="Выберите годы для включения в анализ")
     
     with st.spinner("Генерация реалистичных температурных данных..."):
         data = generate_realistic_temperature_data(ALL_CITIES)
