@@ -535,26 +535,30 @@ def main():
         with col_right:
             st.subheader("Статистика по сезонам")
             
-            if 'seasonal_stats_raw' in analysis:
-                display_stats = analysis['seasonal_stats_raw'].copy()
+            display_data = []
+            seasons = ['winter', 'spring', 'summer', 'autumn']
+            
+            for season in seasons:
+                if season in seasonal_stats.index:
+                    season_data = seasonal_stats.loc[season]
+                    display_data.append({
+                        'Сезон': season.capitalize(),
+                        'Средняя': f"{season_data['mean']:.1f}°C",
+                        'Стд. откл.': f"{season_data['std']:.1f}°C",
+                        'Минимум': f"{season_data['min']:.1f}°C",
+                        'Максимум': f"{season_data['max']:.1f}°C",
+                        'Дней': int(season_data['count'])
+                    })
+            
+            if display_data:
+                display_df = pd.DataFrame(display_data)
+                st.dataframe(
+                    display_df,
+                    use_container_width=True,
+                    height=350
+                )
             else:
-                display_stats = analysis['seasonal_stats'].reset_index().copy()
-            
-            display_stats = display_stats[['season', 'mean', 'std', 'min', 'max']]
-            
-            display_stats.columns = ['Сезон', 'Средняя', 'Стд. откл.', 'Минимум', 'Максимум']
-            
-            def format_temp(val):
-                return f"{val:.1f}°C"
-            
-            for col in ['Средняя', 'Стд. откл.', 'Минимум', 'Максимум']:
-                display_stats[col] = display_stats[col].apply(format_temp)
-            
-            st.dataframe(
-                display_stats,
-                use_container_width=True,
-                height=350
-            )
+                st.info("Нет данных для отображения статистики по сезонам")
             
             st.markdown("**Климатическая норма:**")
             climate_norms = seasonal_temperatures[selected_city]
