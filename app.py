@@ -455,8 +455,6 @@ def main():
             else:
                 st.warning("Проблема с API ключом")
         
-        st.markdown('</div>', unsafe_allow_html=True)
-        
         st.markdown("---")
         st.subheader("Параметры анализа")
         
