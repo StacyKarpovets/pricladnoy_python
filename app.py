@@ -536,11 +536,6 @@ def main():
                 st.metric("💧 Влажность", f"{weather['humidity']}%")
             with cols_weather[3]:
                 st.metric("🔽 Давление", f"{weather['pressure']} hPa")
-            
-            if 'sunrise' in weather and 'sunset' in weather:
-                st.info(f"**🌤️ Погода:** {weather['description'].capitalize()}")
-                st.info(f"**🌅 Восход:** {weather['sunrise']} | **🌇 Закат:** {weather['sunset']}")
-            else:
                 st.info(f"**🌤️ Погода:** {weather['description'].capitalize()}")
             
             current_temp = weather['temperature']
