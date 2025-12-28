@@ -396,8 +396,7 @@ def main():
             index=6,
             help="Выберите город для детального анализа температурных данных"
         )
-        
-        st.markdown("---")
+    
         st.subheader("🔑 OpenWeatherMap API")
         
         if 'api_key_valid' not in st.session_state:
