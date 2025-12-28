@@ -255,16 +255,6 @@ def create_temperature_timeseries(city_data, city_name):
         hovertemplate='<b>%{x|%d.%m.%Y}</b><br>Среднее: %{y:.1f}°C<extra></extra>'
     ))
     
-    if 'trend_line' in city_data.columns:
-        fig.add_trace(go.Scatter(
-            x=city_data['timestamp'],
-            y=city_data['trend_line'],
-            mode='lines',
-            name='Долгосрочный тренд',
-            line=dict(color='red', width=2, dash='dash'),
-            hovertemplate='Тренд: %{y:.1f}°C<extra></extra>'
-        ))
-    
     anomalies = city_data[city_data['is_anomaly']]
     if not anomalies.empty:
         fig.add_trace(go.Scatter(
