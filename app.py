@@ -650,19 +650,125 @@ def main():
             fig_heatmap.update_layout(height=400)
             st.plotly_chart(fig_heatmap, use_container_width=True)
     
-    # Временный фикс - закомментировать проблемную вкладку
-    # tab1, tab2, tab3, tab4 = st.tabs([
-    #     "📊 Статистика", 
-    #     "📈 Анализ трендов", 
-    #     "🌡️ Текущая погода",  # Проблемная вкладка
-    #     "⚡ Производительность"
-    # ])
-    
-    tab1, tab2, tab4 = st.tabs([
-        "📊 Статистика", 
-        "📈 Анализ трендов", 
-        "⚡ Производительность"
-    ])
+    with tab3:
+        st.header("🌤️ Текущая погода")
+        
+        col_btn1, col_btn2 = st.columns([3, 1])
+        
+        with col_btn1:
+            if st.button("Получить текущую погоду", type="primary", use_container_width=True):
+                with st.spinner(f"Запрос данных для {selected_city}..."):
+                    start_time = time.time()
+                    
+                    if method == "Синхронный":
+                        weather_data = get_current_weather_sync(api_key_input, selected_city)
+                    else:
+                        weather_data = get_current_weather_sync(api_key_input, selected_city)
+                    
+                    request_time = time.time() - start_time
+                    
+                    if weather_data['success']:
+                        st.session_state['weather_data'] = weather_data
+                        st.session_state['request_time'] = request_time
+                        st.success(f"Данные получены за {request_time:.2f} секунд")
+                    else:
+                        st.error(f"Ошибка: {weather_data['error']}")
+                        
+                        if weather_data.get('api_error', {}).get('cod') == 401:
+                            with st.expander("Ошибка с API"):
+                                st.json(weather_data['api_error'])
+        
+        with col_btn2:
+            if st.button("Очистить данные", type="secondary", use_container_width=True):
+                if 'weather_data' in st.session_state:
+                    del st.session_state['weather_data']
+                st.rerun()
+        
+        if 'weather_data' in st.session_state and st.session_state['weather_data']['success']:
+            weather = st.session_state['weather_data']
+            
+            st.markdown("---")
+            st.subheader(f"Текущая погода в {weather['city']}")
+            
+            cols_weather = st.columns(4)
+            with cols_weather[0]:
+                st.metric("🌡️ Температура", f"{weather['temperature']}°C")
+            with cols_weather[1]:
+                st.metric("💨 Ощущается как", f"{weather['feels_like']}°C")
+            with cols_weather[2]:
+                st.metric("💧 Влажность", f"{weather['humidity']}%")
+            with cols_weather[3]:
+                st.metric("🔽 Давление", f"{weather['pressure']} hPa")
+            
+            col_desc, col_sun = st.columns(2)
+            with col_desc:
+                st.info(f"**🌤️ Погодные условия:** {weather['description'].capitalize()}")
+            with col_sun:
+                st.info(f"**🌅 Восход:** {weather['sunrise']} | **🌇 Закат:** {weather['sunset']}")
+            
+            st.markdown("---")
+            st.subheader("Сравнение с историческими данными")
+            
+            current_temp = weather['temperature']
+            hist_mean = overall_stats['mean']
+            hist_std = overall_stats['std']
+            
+            deviation = current_temp - hist_mean
+            z_score = deviation / hist_std if hist_std > 0 else 0
+            
+            if abs(z_score) <= 2:
+                status = "✅ **Температура в пределах нормы**"
+                color = "green"
+                icon = "✅"
+            elif abs(z_score) <= 3:
+                status = "⚠️ **Температура нестандартная**"
+                color = "orange"
+                icon = "⚠️"
+            else:
+                status = "🚨 **Температура аномальная**"
+                color = "red"
+                icon = "🚨"
+            
+            st.markdown(f"""
+            <div style="background-color:{color}20; padding:15px; border-radius:10px; border-left:5px solid {color};">
+                <h4>{icon} {status}</h4>
+                <p><b>Текущая температура:</b> {current_temp}°C</p>
+                <p><b>Историческое среднее ({years_to_show[0]}-{years_to_show[-1]}):</b> {hist_mean}°C</p>
+                <p><b>Отклонение:</b> <span style="color:{'red' if deviation > 0 else 'blue'}">{deviation:+.1f}°C</span></p>
+                <p><b>Z-оценка:</b> {z_score:.2f}</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            fig_comparison = go.Figure()
+            
+            fig_comparison.add_trace(go.Indicator(
+                mode="number+delta",
+                value=current_temp,
+                delta={'reference': hist_mean, 'relative': False, 'valueformat': '.1f'},
+                title={'text': "Текущая температура"},
+                domain={'row': 0, 'column': 0}
+            ))
+            
+            fig_comparison.add_trace(go.Indicator(
+                mode="number",
+                value=hist_mean,
+                title={'text': "Историческое среднее"},
+                domain={'row': 0, 'column': 1}
+            ))
+            
+            fig_comparison.add_trace(go.Indicator(
+                mode="number",
+                value=abs(z_score),
+                title={'text': "Z-оценка"},
+                domain={'row': 0, 'column': 2}
+            ))
+            
+            fig_comparison.update_layout(
+                grid={'rows': 1, 'columns': 3, 'pattern': "independent"},
+                height=200
+            )
+            
+            st.plotly_chart(fig_comparison, use_container_width=True)
     
     with tab4:
         st.header("Сравнение асинхронных и синхронных запросов")
