@@ -535,9 +535,6 @@ def main():
         with col_right:
             st.subheader("Статистика по сезонам")
             
-            if 'debug_info' in analysis:
-                st.write(f"Отладка: {analysis['debug_info']}")
-            
             st.write(f"Индекс seasonal_stats: {list(seasonal_stats.index)}")
             st.write(f"Форма seasonal_stats: {seasonal_stats.shape}")
             
@@ -568,7 +565,7 @@ def main():
                     use_container_width=True,
                     height=350
                 )
-                st.write(f"Отображено строк: {len(display_df)}")
+                display_df = display_df.head(4)
             else:
                 st.info("Нет данных для отображения статистики по сезонам")
             
