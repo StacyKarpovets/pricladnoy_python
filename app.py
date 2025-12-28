@@ -535,11 +535,20 @@ def main():
         with col_right:
             st.subheader("Статистика по сезонам")
             
+            if 'debug_info' in analysis:
+                st.write(f"Отладка: {analysis['debug_info']}")
+            
+            st.write(f"Индекс seasonal_stats: {list(seasonal_stats.index)}")
+            st.write(f"Форма seasonal_stats: {seasonal_stats.shape}")
+            
             display_data = []
             seasons = ['winter', 'spring', 'summer', 'autumn']
             
+            available_seasons = list(seasonal_stats.index) if not seasonal_stats.empty else []
+            st.write(f"Доступные сезоны: {available_seasons}")
+            
             for season in seasons:
-                if season in seasonal_stats.index:
+                if season in available_seasons:
                     season_data = seasonal_stats.loc[season]
                     display_data.append({
                         'Сезон': season.capitalize(),
@@ -549,6 +558,8 @@ def main():
                         'Максимум': f"{season_data['max']:.1f}°C",
                         'Дней': int(season_data['count'])
                     })
+                else:
+                    st.write(f"Сезон '{season}' отсутствует в данных")
             
             if display_data:
                 display_df = pd.DataFrame(display_data)
@@ -557,6 +568,7 @@ def main():
                     use_container_width=True,
                     height=350
                 )
+                st.write(f"Отображено строк: {len(display_df)}")
             else:
                 st.info("Нет данных для отображения статистики по сезонам")
             
