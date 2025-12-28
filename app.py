@@ -182,7 +182,11 @@ async def fetch_weather(session: aiohttp.ClientSession, api_key: str, city: str)
                     'temperature': round(data['main']['temp'], 1),
                     'feels_like': round(data['main']['feels_like'], 1),
                     'humidity': data['main']['humidity'],
+                    'pressure': data['main']['pressure'],
                     'description': data['weather'][0]['description'],
+                    'wind_speed': data['wind']['speed'],
+                    'sunrise': datetime.fromtimestamp(data['sys']['sunrise']).strftime('%H:%M'),
+                    'sunset': datetime.fromtimestamp(data['sys']['sunset']).strftime('%H:%M'),
                 }
             else:
                 return {'success': False, 'error': f'API Error: {response.status}', 'city': city}
@@ -373,7 +377,7 @@ def main():
     seasonal_stats = analysis['seasonal_stats']
     yearly_stats = analysis['yearly_stats']
     
-    tab1, tab2, tab3, tab4 = st.tabs(["📊 Статистика", "📈 Тренды", "🌡️ Погода", "⚡ Производительность"])
+    tab1, tab2, tab3, tab4 = st.tabs(["📊 Статистика", "📈 Тренды", "🌡️ Погода", "⚡ Сравнение скорости"])
     
     with tab1:
         st.markdown(f'<div class="city-header">📊 Статистика {selected_city}</div>', unsafe_allow_html=True)
@@ -533,7 +537,11 @@ def main():
             with cols_weather[3]:
                 st.metric("🔽 Давление", f"{weather['pressure']} hPa")
             
-            st.info(f"**🌤️ Погода:** {weather['description'].capitalize()}")
+            if 'sunrise' in weather and 'sunset' in weather:
+                st.info(f"**🌤️ Погода:** {weather['description'].capitalize()}")
+                st.info(f"**🌅 Восход:** {weather['sunrise']} | **🌇 Закат:** {weather['sunset']}")
+            else:
+                st.info(f"**🌤️ Погода:** {weather['description'].capitalize()}")
             
             current_temp = weather['temperature']
             hist_mean = overall_stats['mean']
@@ -557,51 +565,121 @@ def main():
             """, unsafe_allow_html=True)
     
     with tab4:
-        st.header("⚡ Производительность")
+        st.header("⚡ Сравнение скорости асинхронных и синхронных запросов")
         
         if not st.session_state.api_key_valid:
-            st.warning("Требуется API ключ")
-        elif st.button("Запустить тест производительности"):
+            st.warning("Требуется действительный API ключ для тестирования")
+        elif st.button("Запустить тест скорости", type="primary", use_container_width=True):
             test_cities = ["Berlin", "Paris", "London", "Tokyo", "Moscow", "New York", "Beijing"]
+            
+            st.info(f"Тестирование для {len(test_cities)} городов: {', '.join(test_cities)}")
             
             progress_bar = st.progress(0)
             status_text = st.empty()
             
-            status_text.text("⏳ Синхронные запросы...")
+            sync_results = []
             sync_times = []
             start_time = time.time()
             
             for i, city in enumerate(test_cities):
+                city_start = time.time()
                 result = get_current_weather_sync(api_key_input, city)
-                sync_times.append(time.time() - start_time)
+                city_time = time.time() - city_start
+                
+                sync_results.append(result)
+                sync_times.append(city_time)
                 progress_bar.progress((i + 1) / (len(test_cities) * 2))
+                time.sleep(0.1)  # Небольшая пауза между запросами
             
             sync_total_time = time.time() - start_time
             
-            status_text.text("Асинхронные запросы...")
             start_time = time.time()
             
             async def run_async_test():
                 return await get_multiple_weather_async(api_key_input, test_cities)
             
-            asyncio.run(run_async_test())
+            async_results = asyncio.run(run_async_test())
             
-            progress_bar.progress(100)
+            for i in range(len(test_cities)):
+                progress_bar.progress((len(test_cities) + i + 1) / (len(test_cities) * 2))
+            
             async_total_time = time.time() - start_time
             
             col_perf1, col_perf2 = st.columns(2)
+            
             with col_perf1:
-                st.metric("Синхронные", f"{sync_total_time:.2f} сек", f"{sync_total_time/len(test_cities):.2f} сек/город")
+                st.metric(
+                    "Синхронные запросы", 
+                    f"{sync_total_time:.2f} сек",
+                    f"{sync_total_time/len(test_cities):.2f} сек/город",
+                    delta_color="normal"
+                )
             
             with col_perf2:
-                st.metric("Асинхронные", f"{async_total_time:.2f} сек", f"{async_total_time/len(test_cities):.2f} сек/город")
+                st.metric(
+                    "Асинхронные запросы", 
+                    f"{async_total_time:.2f} сек",
+                    f"{async_total_time/len(test_cities):.2f} сек/город",
+                    delta_color="normal"
+                )
             
-            if async_total_time > 0:
+            st.markdown("---")
+            st.subheader("Результаты сравнения")
+            
+            if sync_total_time > 0 and async_total_time > 0:
                 speedup = sync_total_time / async_total_time
+                
+                perf_data = pd.DataFrame({
+                    'Метод': ['Синхронный', 'Асинхронный'],
+                    'Общее время (сек)': [sync_total_time, async_total_time],
+                    'Время на город (сек)': [sync_total_time/len(test_cities), async_total_time/len(test_cities)]
+                })
+                
+                fig_perf = px.bar(
+                    perf_data,
+                    x='Метод',
+                    y='Общее время (сек)',
+                    color='Метод',
+                    title='Сравнение времени выполнения запросов',
+                    text='Общее время (сек)',
+                    color_discrete_map={'Синхронный': '#FF6B6B', 'Асинхронный': '#4ECDC4'}
+                )
+                
+                fig_perf.update_traces(texttemplate='%{text:.2f} сек', textposition='outside')
+                fig_perf.update_layout(
+                    height=400, 
+                    showlegend=False,
+                    yaxis_title='Время (секунды)',
+                    xaxis_title='Метод запроса'
+                )
+                
+                st.plotly_chart(fig_perf, use_container_width=True)
+                
+                
                 if speedup > 1.2:
-                    st.success(f"**Ускорение в {speedup:.1f} раза!**")
+                    st.success(f"**Асинхронные запросы быстрее синхронных в {speedup:.1f} раза!**")
+                    st.markdown(f"""
+                    **Ключевые показатели:**
+                    - Синхронные запросы: {sync_total_time:.2f} секунд
+                    - Асинхронные запросы: {async_total_time:.2f} секунд
+                    - Экономия времени: {sync_total_time - async_total_time:.2f} секунд ({((sync_total_time - async_total_time)/sync_total_time*100):.0f}%)
+                    - Среднее время на запрос: {sync_total_time/len(test_cities):.2f} сек (синхрон) vs {async_total_time/len(test_cities):.2f} сек (асинхрон)
+                    
+                    **Выводы:**
+                    - Асинхронные запросы значительно эффективнее для одновременного получения данных по нескольким городам
+                    """)
                 else:
-                    st.info("Разница незначительна")
+                    st.info(f"**Асинхронные запросы быстрее синхронных в {speedup:.1f} раза**")
+                    st.markdown(f"""
+                    **Ключевые показатели:**
+                    - Синхронные запросы: {sync_total_time:.2f} секунд
+                    - Асинхронные запросы: {async_total_time:.2f} секунд
+                    - Разница во времени: {abs(sync_total_time - async_total_time):.2f} секунд
+                    
+                    **Выводы:**
+                    - Для небольшого количества городов разница между методами незначительна
+                    - Синхронный метод проще в реализации и отладке
+                    """)
 
 if __name__ == "__main__":
     main()
