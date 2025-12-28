@@ -106,10 +106,16 @@ def analyze_city_data(city_data):
     }).round(1)
     yearly_stats.columns = ['mean', 'std', 'min', 'max', 'count']
     
-    seasonal_stats = city_data.groupby('season').agg({
+    seasonal_stats = city_data.groupby('season', as_index=False).agg({
         'temperature': ['mean', 'std', 'min', 'max', 'count']
-    }).round(1)
-    seasonal_stats.columns = ['mean', 'std', 'min', 'max', 'count']
+    })
+    
+    seasonal_stats.columns = ['season', 'mean', 'std', 'min', 'max', 'count']
+    
+    for col in ['mean', 'std', 'min', 'max']:
+        seasonal_stats[col] = seasonal_stats[col].round(1)
+    
+    seasonal_stats_indexed = seasonal_stats.set_index('season')
     
     city_data['days_since_start'] = (city_data['timestamp'] - city_data['timestamp'].min()).dt.days
     if len(city_data) > 1:
@@ -136,11 +142,12 @@ def analyze_city_data(city_data):
     
     return {
         'data': city_data,
-        'seasonal_stats': seasonal_stats,
+        'seasonal_stats': seasonal_stats_indexed,
         'yearly_stats': yearly_stats,
-        'overall_stats': overall_stats
+        'overall_stats': overall_stats,
+        'seasonal_stats_raw': seasonal_stats
     }
-
+    
 def get_current_weather_sync(api_key: str, city: str) -> Dict:
     try:
         url = "http://api.openweathermap.org/data/2.5/weather"
@@ -285,8 +292,10 @@ def create_seasonal_boxplot(city_data, city_name, seasonal_stats):
         category_orders={'season': ['winter', 'spring', 'summer', 'autumn']}
     )
     
+    seasons_in_data = seasonal_stats.index.tolist()
+    
     for season in ['winter', 'spring', 'summer', 'autumn']:
-        if season in seasonal_stats.index:
+        if season in seasons_in_data:
             season_mean = seasonal_stats.loc[season, 'mean']
             fig.add_hline(
                 y=season_mean,
@@ -305,7 +314,7 @@ def create_seasonal_boxplot(city_data, city_name, seasonal_stats):
     )
     
     return fig
-
+    
 def create_yearly_trend_chart(yearly_stats, city_name):
     fig = go.Figure()
     
@@ -525,14 +534,20 @@ def main():
         
         with col_right:
             st.subheader("Статистика по сезонам")
-            display_stats = seasonal_stats.copy()
-            display_stats = display_stats[['mean', 'std', 'min', 'max']]
-            display_stats.columns = ['Средняя', 'Стд. откл.', 'Минимум', 'Максимум']
-          
+            
+            if 'seasonal_stats_raw' in analysis:
+                display_stats = analysis['seasonal_stats_raw'].copy()
+            else:
+                display_stats = analysis['seasonal_stats'].reset_index().copy()
+            
+            display_stats = display_stats[['season', 'mean', 'std', 'min', 'max']]
+            
+            display_stats.columns = ['Сезон', 'Средняя', 'Стд. откл.', 'Минимум', 'Максимум']
+            
             def format_temp(val):
                 return f"{val:.1f}°C"
             
-            for col in display_stats.columns:
+            for col in ['Средняя', 'Стд. откл.', 'Минимум', 'Максимум']:
                 display_stats[col] = display_stats[col].apply(format_temp)
             
             st.dataframe(
