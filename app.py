@@ -40,7 +40,7 @@ month_to_season = {
 ALL_CITIES = list(seasonal_temperatures.keys())
 
 @st.cache_data
-def generate_realistic_temperature_data(cities: List[str], num_years: int = 6):
+def generate_realistic_temperature_data(cities: List[str], num_years: int = 15):
     dates = pd.date_range(start="2010-01-01", periods=365 * num_years, freq="D")
     data = []
 
