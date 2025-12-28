@@ -377,7 +377,7 @@ def main():
     seasonal_stats = analysis['seasonal_stats']
     yearly_stats = analysis['yearly_stats']
     
-    tab1, tab2, tab3, tab4 = st.tabs(["📊 Статистика", "📈 Тренды", "🌡️ Погода", "⚡ Сравнение скорости"])
+    tab1, tab2, tab3, tab4 = st.tabs(["📊 Статистика", "📈 Динамика", "🌡️ Погода", "⚡ Сравнение скорости"])
     
     with tab1:
         st.markdown(f'<div class="city-header">📊 Статистика {selected_city}</div>', unsafe_allow_html=True)
