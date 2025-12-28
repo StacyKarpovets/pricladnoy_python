@@ -770,7 +770,7 @@ def main():
         if not st.session_state.api_key_valid:
             st.warning("Требуется действительный API ключ")
         elif st.button("Запустить тест производительности", type="primary", use_container_width=True):
-            test_cities = ["Berlin", "Paris", "London", "Tokyo", "Moscow", "New York"]
+            test_cities = ["Berlin", "Paris", "London", "Tokyo", "Moscow", "New York", "Beijing"]
             
             st.info(f"Тестирование для {len(test_cities)} городов: {', '.join(test_cities)}")
             
@@ -808,7 +808,6 @@ def main():
             async_total_time = time.time() - start_time
             
             progress_bar.progress(100)
-            status_text.text("Тестирование завершено!")
             
             col_perf1, col_perf2 = st.columns(2)
             
@@ -862,7 +861,7 @@ def main():
                     st.warning("**Разница в производительности незначительна**")
                     st.markdown("""
                     **Выводы:**
-                    - Для небольшого количества городов (1-3) разница между методами минимальна
+                    - Для небольшого количества городов разница между методами минимальна
                     - Синхронный метод проще в реализации и отладке
                     - Выбор метода зависит от конкретных требований приложения
                     """)
