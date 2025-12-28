@@ -10,8 +10,6 @@ import time
 from typing import List, Dict
 from datetime import datetime
 
-API_KEY = ""
-
 seasonal_temperatures = {
     "New York": {"winter": 0, "spring": 10, "summer": 25, "autumn": 15},
     "London": {"winter": 5, "spring": 11, "summer": 18, "autumn": 12},
