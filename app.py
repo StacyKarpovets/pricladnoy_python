@@ -537,18 +537,20 @@ def main():
         
         with col_right:
             st.subheader("Статистика по сезонам")
-            
+    
             seasons_data = [
-                {"Сезон": "Зима", "Средняя": "-", "Стд. откл.": "-", "Минимум": "-", "Максимум": "-", "Дней": 0},
-                {"Сезон": "Весна", "Средняя": "-", "Стд. откл.": "-", "Минимум": "-", "Максимум": "-", "Дней": 0},
-                {"Сезон": "Лето", "Средняя": "-", "Стд. откл.": "-", "Минимум": "-", "Максимум": "-", "Дней": 0},
-                {"Сезон": "Осень", "Средняя": "-", "Стд. откл.": "-", "Минимум": "-", "Максимум": "-", "Дней": 0},
+        {"Сезон": "Зима", "Средняя": "-", "Стд. откл.": "-", "Минимум": "-", "Максимум": "-", "Дней": 0},
+        {"Сезон": "Весна", "Средняя": "-", "Стд. откл.": "-", "Минимум": "-", "Максимум": "-", "Дней": 0},
+        {"Сезон": "Лето", "Средняя": "-", "Стд. откл.": "-", "Минимум": "-", "Максимум": "-", "Дней": 0},
+        {"Сезон": "Осень", "Средняя": "-", "Стд. откл.": "-", "Минимум": "-", "Максимум": "-", "Дней": 0},
             ]
-            
+    
+            season_mapping = {'winter': 0, 'spring': 1, 'summer': 2, 'autumn': 3}
+    
             for season in ['winter', 'spring', 'summer', 'autumn']:
                 if season in seasonal_stats.index:
                     season_data = seasonal_stats.loc[season]
-                    idx = ['winter', 'spring', 'summer', 'autumn'].index(season)
+                    idx = season_mapping[season]
                     seasons_data[idx] = {
                         'Сезон': season.capitalize(),
                         'Средняя': f"{season_data['mean']:.1f}°C",
@@ -557,15 +559,15 @@ def main():
                         'Максимум': f"{season_data['max']:.1f}°C",
                         'Дней': int(season_data['count'])
                     }
-            
+    
             display_df = pd.DataFrame(seasons_data)
-            
+    
             st.dataframe(
                 display_df,
                 width='stretch',
                 height=300
             )
-            
+    
             st.markdown("**Климатическая норма:**")
             climate_norms = seasonal_temperatures[selected_city]
             for season, temp in climate_norms.items():
