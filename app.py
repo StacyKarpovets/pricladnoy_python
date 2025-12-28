@@ -817,29 +817,12 @@ def main():
                          f"{sync_total_time:.2f} сек",
                          f"{sync_total_time/len(test_cities):.2f} сек/город",
                          delta_color="normal")
-                
-                with st.expander("Детали синхронных запросов"):
-                    sync_df = pd.DataFrame({
-                        'Город': test_cities,
-                        'Время (сек)': [f"{t:.2f}" for t in sync_times],
-                        'Статус': ['✅' if r['success'] else '❌' for r in sync_results],
-                        'Температура': [f"{r['temperature']}°C" if r['success'] else 'Ошибка' for r in sync_results]
-                    })
-                    st.dataframe(sync_df, use_container_width=True, hide_index=True)
             
             with col_perf2:
                 st.metric("Асинхронные запросы", 
                          f"{async_total_time:.2f} сек",
                          f"{async_total_time/len(test_cities):.2f} сек/город",
                          delta_color="normal")
-                
-                with st.expander("Детали асинхронных запросов"):
-                    async_df = pd.DataFrame({
-                        'Город': test_cities,
-                        'Статус': ['✅' if r['success'] else '❌' for r in async_results],
-                        'Температура': [f"{r['temperature']}°C" if r['success'] else r.get('error', 'Ошибка') for r in async_results]
-                    })
-                    st.dataframe(async_df, use_container_width=True, hide_index=True)
             
             st.markdown("---")
             st.subheader("Сравнительный анализ производительности")
