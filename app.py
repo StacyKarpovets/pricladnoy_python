@@ -398,8 +398,6 @@ def main():
         )
         
         st.markdown("---")
-        
-        st.markdown('<div class="api-key-form">', unsafe_allow_html=True)
         st.subheader("🔑 OpenWeatherMap API")
         
         if 'api_key_valid' not in st.session_state:
