@@ -1,20 +1,21 @@
 services:
+  # Веб-сервис с FastAPI приложением
   - type: web
-    name: project-3-url-shortener
+    name: pricladnoy-python-url-shortener
     runtime: python
     plan: free
-    autoDeploy: true
+    region: frankfurt
+    branch: project_3
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATABASE_URL
         fromDatabase:
-          name: project-3-db
+          name: pricladnoy-python-db
           property: connectionString
       - key: REDIS_URL
-        fromService:
-          type: redis
-          name: project-3-redis
+        fromDatabase:
+          name: pricladnoy-python-redis
           property: connectionString
       - key: SECRET_KEY
         generateValue: true
@@ -23,14 +24,17 @@ services:
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
         value: 30
 
-  - type: pserv
-    name: project-3-db
+  # PostgreSQL база данных
+  - type: postgresql
+    name: pricladnoy-python-db
     plan: free
-    type: postgresql
-    version: 15
+    region: frankfurt
+    ipAllowList: []
 
+  # Redis
   - type: redis
-    name: project-3-redis
+    name: pricladnoy-python-redis
     plan: free
+    region: frankfurt
     maxmemoryPolicy: noeviction
     ipAllowList: []
