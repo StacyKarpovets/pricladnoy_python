@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: project-3-url-shortener
+    runtime: python
+    plan: free
+    autoDeploy: true
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: project-3-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: project-3-redis
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 30
+
+  - type: pserv
+    name: project-3-db
+    plan: free
+    type: postgresql
+    version: 15
+
+  - type: redis
+    name: project-3-redis
+    plan: free
+    maxmemoryPolicy: noeviction
+    ipAllowList: []
