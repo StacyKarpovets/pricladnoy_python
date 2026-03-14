@@ -24,16 +24,15 @@ services:
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
         value: 30
 
-  # PostgreSQL база данных
-  - type: postgresql
-    name: pricladnoy-python-db
+databases:
+  - name: pricladnoy-python-db
+    databaseName: pricladnoy_python_db
     plan: free
     region: frankfurt
     ipAllowList: []
 
-  # Redis
-  - type: redis
-    name: pricladnoy-python-redis
+redis:
+  - name: pricladnoy-python-redis
     plan: free
     region: frankfurt
     maxmemoryPolicy: noeviction
