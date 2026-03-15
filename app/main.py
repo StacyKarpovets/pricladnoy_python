@@ -9,17 +9,17 @@ try:
     from app.routers import links, auth
     from app.database import engine, Base
 except Exception as e:
-    print("="*50, file=sys.stderr)
+    print(file=sys.stderr)
     print("ERROR DURING IMPORT:", file=sys.stderr)
-    print("="*50, file=sys.stderr)
+    print(file=sys.stderr)
     traceback.print_exc(file=sys.stderr)
-    print("="*50, file=sys.stderr)
+    print(file=sys.stderr)
     raise
 
 try:
     app = FastAPI(
         title="URL Shortener Service",
-        description="API для сокращения ссылок с аналитикой и управлением",
+        description="API для сокращения ссылок",
         version="1.0.0",
         docs_url="/docs",
         redoc_url="/redoc"
@@ -78,9 +78,9 @@ try:
     print("Application startup complete", file=sys.stderr)
 
 except Exception as e:
-    print("="*50, file=sys.stderr)
+    print(file=sys.stderr)
     print("ERROR DURING APP CREATION:", file=sys.stderr)
-    print("="*50, file=sys.stderr)
+    print(file=sys.stderr)
     traceback.print_exc(file=sys.stderr)
-    print("="*50, file=sys.stderr)
+    print(file=sys.stderr)
     raise
