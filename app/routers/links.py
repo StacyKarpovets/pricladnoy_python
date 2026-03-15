@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from fastapi.responses import RedirectResponse
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy.orm import Session
 from typing import Optional, List
 from datetime import datetime
 
@@ -13,17 +12,17 @@ from app.models import User, Link
 router = APIRouter()
 
 @router.post("/shorten", response_model=schemas.LinkResponse)
-async def create_short_link(
+def create_short_link(
     request: Request,
     link_data: schemas.LinkCreate,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(auth.get_current_active_user)
 ):
     link_crud = crud.LinkCRUD(db)
     
     try:
         user_id = current_user.id if current_user else None
-        link = await link_crud.create_link(link_data, user_id)
+        link = link_crud.create_link(link_data, user_id)
         
         base_url = str(request.base_url).rstrip('/')
         short_url = f"{base_url}/{link.short_code}"
@@ -50,18 +49,15 @@ async def create_short_link(
         )
 
 @router.get("/{short_code}")
-async def redirect_to_url(
+def redirect_to_url(
     short_code: str,
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ):
     link_crud = crud.LinkCRUD(db)
-    link = await link_crud.get_link_by_short_code(short_code)
+    link = link_crud.get_link_by_short_code(short_code)
     
     if not link or isinstance(link, dict):
-        result = await db.execute(
-            select(Link).where(Link.short_code == short_code)
-        )
-        link = result.scalar_one_or_none()
+        link = db.query(Link).filter(Link.short_code == short_code).first()
     
     if not link:
         raise HTTPException(
@@ -75,17 +71,17 @@ async def redirect_to_url(
             detail="Link has expired"
         )
     
-    await link_crud.increment_clicks(short_code)
+    link_crud.increment_clicks(short_code)
     
     return RedirectResponse(url=link.original_url)
 
 @router.get("/{short_code}/stats", response_model=schemas.LinkStats)
-async def get_link_stats(
+def get_link_stats(
     short_code: str,
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ):
     link_crud = crud.LinkCRUD(db)
-    stats = await link_crud.get_link_stats(short_code)
+    stats = link_crud.get_link_stats(short_code)
     
     if not stats:
         raise HTTPException(
@@ -93,10 +89,7 @@ async def get_link_stats(
             detail="Link not found"
         )
     
-    result = await db.execute(
-        select(Link).where(Link.short_code == short_code)
-    )
-    link = result.scalar_one_or_none()
+    link = db.query(Link).filter(Link.short_code == short_code).first()
     
     if link:
         base_url = "http://localhost:8000"
@@ -124,16 +117,16 @@ async def get_link_stats(
     )
 
 @router.put("/{short_code}", response_model=schemas.LinkResponse)
-async def update_link(
+def update_link(
     short_code: str,
     link_update: schemas.LinkUpdate,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     link_crud = crud.LinkCRUD(db)
     
     try:
-        link = await link_crud.update_link(short_code, link_update, current_user.id)
+        link = link_crud.update_link(short_code, link_update, current_user.id)
         if not link:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -163,15 +156,15 @@ async def update_link(
         )
 
 @router.delete("/{short_code}")
-async def delete_link(
+def delete_link(
     short_code: str,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     link_crud = crud.LinkCRUD(db)
     
     try:
-        deleted = await link_crud.delete_link(short_code, current_user.id)
+        deleted = link_crud.delete_link(short_code, current_user.id)
         if not deleted:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -185,14 +178,14 @@ async def delete_link(
         )
 
 @router.get("/search/", response_model=List[schemas.LinkResponse])
-async def search_links(
+def search_links(
     original_url: str = Query(..., description="Original URL to search for"),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(auth.get_current_active_user)
 ):
     link_crud = crud.LinkCRUD(db)
     user_id = current_user.id if current_user else None
-    links = await link_crud.search_by_original_url(original_url, user_id)
+    links = link_crud.search_by_original_url(original_url, user_id)
     
     base_url = "http://localhost:8000"
     result = []
@@ -215,10 +208,10 @@ async def search_links(
     return result
 
 @router.post("/admin/cleanup/expired")
-async def cleanup_expired_links(
-    db: AsyncSession = Depends(get_db),
+def cleanup_expired_links(
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     link_crud = crud.LinkCRUD(db)
-    count = await link_crud.cleanup_expired_links()
+    count = link_crud.cleanup_expired_links()
     return {"message": f"Cleaned up {count} expired links"}
