@@ -1,13 +1,11 @@
 services:
-  # Веб-сервис с FastAPI приложением
   - type: web
     name: pricladnoy-python-url-shortener
-    runtime: python
+    runtime: docker
     plan: free
     region: frankfurt
     branch: project_3
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    dockerfilePath: ./Dockerfile
     envVars:
       - key: DATABASE_URL
         fromDatabase:
