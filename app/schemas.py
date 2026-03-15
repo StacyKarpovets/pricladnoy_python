@@ -2,7 +2,6 @@ from pydantic import BaseModel, HttpUrl, Field
 from datetime import datetime
 from typing import Optional, List
 
-# Link schemas
 class LinkBase(BaseModel):
     original_url: HttpUrl
 
@@ -37,7 +36,6 @@ class LinkSearch(BaseModel):
     results: List[LinkResponse]
     total: int
 
-# User schemas
 class UserBase(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     email: str
