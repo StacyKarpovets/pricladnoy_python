@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from typing import Optional, List
 from datetime import datetime
 
 from app.database import get_db
 from app import crud, auth, schemas
 from app.auth import get_current_active_user
-from app.models import User
+from app.models import User, Link
 
 router = APIRouter()
 
@@ -18,24 +19,15 @@ async def create_short_link(
     db: AsyncSession = Depends(get_db),
     current_user: Optional[User] = Depends(auth.get_current_active_user)
 ):
-    """
-    Create a short link
-    
-    - **original_url**: The URL to shorten
-    - **custom_alias**: Optional custom alias (must be unique)
-    - **expires_at**: Optional expiration date (ISO format)
-    """
     link_crud = crud.LinkCRUD(db)
     
     try:
         user_id = current_user.id if current_user else None
         link = await link_crud.create_link(link_data, user_id)
         
-        # Generate full short URL
         base_url = str(request.base_url).rstrip('/')
         short_url = f"{base_url}/{link.short_code}"
         
-        # Create response
         response = schemas.LinkResponse(
             id=link.id,
             original_url=link.original_url,
@@ -62,13 +54,10 @@ async def redirect_to_url(
     short_code: str,
     db: AsyncSession = Depends(get_db)
 ):
-    """Redirect to original URL"""
     link_crud = crud.LinkCRUD(db)
     link = await link_crud.get_link_by_short_code(short_code)
     
     if not link or isinstance(link, dict):
-        # Try to get from database if not in cache
-        from app.models import Link
         result = await db.execute(
             select(Link).where(Link.short_code == short_code)
         )
@@ -80,14 +69,12 @@ async def redirect_to_url(
             detail="Link not found or expired"
         )
     
-    # Check if expired
     if link.expires_at and link.expires_at < datetime.utcnow():
         raise HTTPException(
             status_code=status.HTTP_410_GONE,
             detail="Link has expired"
         )
     
-    # Increment clicks asynchronously
     await link_crud.increment_clicks(short_code)
     
     return RedirectResponse(url=link.original_url)
@@ -97,7 +84,6 @@ async def get_link_stats(
     short_code: str,
     db: AsyncSession = Depends(get_db)
 ):
-    """Get statistics for a short link"""
     link_crud = crud.LinkCRUD(db)
     stats = await link_crud.get_link_stats(short_code)
     
@@ -107,15 +93,13 @@ async def get_link_stats(
             detail="Link not found"
         )
     
-    # Get link to create full response
-    from app.models import Link
     result = await db.execute(
         select(Link).where(Link.short_code == short_code)
     )
     link = result.scalar_one_or_none()
     
     if link:
-        base_url = "https://your-app.onrender.com"  # Замените на ваш URL
+        base_url = "http://localhost:8000"
         short_url = f"{base_url}/{link.short_code}"
         
         return schemas.LinkStats(
@@ -146,7 +130,6 @@ async def update_link(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    """Update a short link (authenticated users only)"""
     link_crud = crud.LinkCRUD(db)
     
     try:
@@ -157,7 +140,7 @@ async def update_link(
                 detail="Link not found"
             )
         
-        base_url = "https://your-app.onrender.com"  # Замените на ваш URL
+        base_url = "http://localhost:8000"
         short_url = f"{base_url}/{link.short_code}"
         
         return schemas.LinkResponse(
@@ -185,7 +168,6 @@ async def delete_link(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    """Delete a short link (authenticated users only)"""
     link_crud = crud.LinkCRUD(db)
     
     try:
@@ -208,12 +190,11 @@ async def search_links(
     db: AsyncSession = Depends(get_db),
     current_user: Optional[User] = Depends(auth.get_current_active_user)
 ):
-    """Search links by original URL"""
     link_crud = crud.LinkCRUD(db)
     user_id = current_user.id if current_user else None
     links = await link_crud.search_by_original_url(original_url, user_id)
     
-    base_url = "https://your-app.onrender.com"  # Замените на ваш URL
+    base_url = "http://localhost:8000"
     result = []
     for link in links:
         short_url = f"{base_url}/{link.short_code}"
@@ -238,7 +219,6 @@ async def cleanup_expired_links(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    """Admin: Clean up expired links"""
     link_crud = crud.LinkCRUD(db)
     count = await link_crud.cleanup_expired_links()
     return {"message": f"Cleaned up {count} expired links"}
