@@ -71,10 +71,10 @@ pytest tests/test_unit.py -v
 # Только тесты ошибок
 pytest tests/test_*_errors.py -v
 
-### Нагрузочное тестирование
+# Нагрузочное тестирование
 
-# Запустите в отдельном терминале
+### Запустите в отдельном терминале
 uvicorn app.main:app --reload --port 8000
 
-# В другом терминале запустите Locust
+### В другом терминале запустите Locust
 locust -f tests/test_load.py --host=http://localhost:8000
