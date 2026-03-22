@@ -12,3 +12,4 @@ htmlcov/
 .vscode/
 .idea/
 *.log
+test.db

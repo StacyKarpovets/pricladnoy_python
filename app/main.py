@@ -54,10 +54,6 @@ try:
         print("Shutting down...", file=sys.stderr)
         engine.dispose()
 
-    @app.get("/{short_code}")
-    async def redirect_short_link(short_code: str, request: Request):
-        return RedirectResponse(url=f"/links/{short_code}")
-
     @app.get("/")
     async def root():
         base_url = os.getenv("RENDER_EXTERNAL_URL", "http://localhost:8000")
@@ -75,6 +71,10 @@ try:
             "environment": os.getenv("RENDER_ENV", "development")
         }
 
+    @app.get("/{short_code}")
+    async def redirect_short_link(short_code: str, request: Request):
+        return RedirectResponse(url=f"/links/{short_code}")
+
     print("Application startup complete", file=sys.stderr)
 
 except Exception as e:
@@ -84,3 +84,4 @@ except Exception as e:
     traceback.print_exc(file=sys.stderr)
     print(file=sys.stderr)
     raise
+
