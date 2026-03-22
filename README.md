@@ -78,3 +78,6 @@ uvicorn app.main:app --reload --port 8000
 
 ### В другом терминале запустите Locust
 locust -f tests/test_load.py --host=http://localhost:8000
+<img width="1469" height="755" alt="Снимок экрана 2026-03-22 в 12 32 15" src="https://github.com/user-attachments/assets/d53efd92-44b2-4f80-a92f-f2b4f8934737" />
+
+
