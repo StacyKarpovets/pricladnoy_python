@@ -48,3 +48,33 @@ curl -X POST https://pricladnoy-python.onrender.com/links/shorten \
 ### Получение статистики
 
 curl https://pricladnoy-python.onrender.com/links/DIJ2qS/stats
+
+### Запуск тестов локально
+1. Установка зависимостей
+   
+pip install -r requirements.txt
+
+2. Запуск всех тестов с покрытием
+
+pytest tests/ -v --cov=app --cov-report=term --cov-report=html
+3. Просмотр HTML-отчёта о покрытии
+
+open htmlcov/index.html
+4. Запуск конкретных тестов
+
+# Только API тесты
+pytest tests/test_api.py -v
+
+# Только юнит-тесты
+pytest tests/test_unit.py -v
+
+# Только тесты ошибок
+pytest tests/test_*_errors.py -v
+
+### Нагрузочное тестирование
+
+# Запустите в отдельном терминале
+uvicorn app.main:app --reload --port 8000
+
+# В другом терминале запустите Locust
+locust -f tests/test_load.py --host=http://localhost:8000
