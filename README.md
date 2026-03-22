@@ -60,6 +60,9 @@ pytest tests/ -v --cov=app --cov-report=term --cov-report=html
 3. Просмотр HTML-отчёта о покрытии
 
 open htmlcov/index.html
+### Процент покрытия
+<img width="1469" height="755" alt="Снимок экрана 2026-03-22 в 12 32 15" src="https://github.com/user-attachments/assets/d53efd92-44b2-4f80-a92f-f2b4f8934737" />
+
 4. Запуск конкретных тестов
 
 # Только API тесты
@@ -78,6 +81,5 @@ uvicorn app.main:app --reload --port 8000
 
 ### В другом терминале запустите Locust
 locust -f tests/test_load.py --host=http://localhost:8000
-<img width="1469" height="755" alt="Снимок экрана 2026-03-22 в 12 32 15" src="https://github.com/user-attachments/assets/d53efd92-44b2-4f80-a92f-f2b4f8934737" />
 
 
